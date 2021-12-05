@@ -42,6 +42,7 @@ double **alloc2D(int m,int n);
 // when we use different numbers of  processes to solve the problem
 double stats(double **E, int m, int n, double *_mx);
 
+void splot(double **U, double T, int niter, int m, int n);
 
 // Main program
 int main (int argc, char** argv)
@@ -127,6 +128,15 @@ int main (int argc, char** argv)
     
     //swap current E with previous E
     //double **tmp = E; E = E_prev; E_prev = tmp;
+    Simulation::load(&E, &R, &E_prev);
+    double **tmp = E; E = E_prev; E_prev = tmp;
+    
+    if (plot_freq){
+      int k = (int)(t/plot_freq);
+      if ((t - k * plot_freq) < dt){
+        splot(E,t,niter,m+2,n+2);
+      }
+    }
 
   }//end of while loop
   Simulation::end();
@@ -216,6 +226,8 @@ void splot(double **U, double T, int niter, int m, int n)
           mn = U[j][i];
       }
 
+    fprintf(gnu,"set terminal png size 800,600 enhanced font 'Helvetica,20'\n");
+    fprintf(gnu,"set output 'output.png'\n");
     fprintf(gnu,"set title \"T = %f [niter = %d]\"\n",T, niter);
     fprintf(gnu,"set size square\n");
     fprintf(gnu,"set key off\n");
