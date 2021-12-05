@@ -41,35 +41,33 @@ void check2(cudaError_t err, const char * file, int line){
 #define CUCall(x) (x)
 #endif
 
-
 __global__ void simulate_v1_PDE(double *E, double *R, double *E_prev){
-	int j = blockIdx.x*blockDim.x + threadIdx.x; 
-	int i = blockIdx.y*blockDim.y + threadIdx.y;
-
-	int grid_width = gridDim.x * blockDim.x;
-    int index = i * grid_width + j;
-
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	int j = blockIdx.y * blockDim.y + threadIdx.y;
+	
+	int tid = blockIdx.x * blockDim.x + threadIdx.x;
+	
+	//int tmp2 = tid - i;
 	int tmp = 200; //n
 
 	if (i>0 && j > 0 && (i < n+2 ) && (j < n+2)){
-		 E[index] = E_prev[index] + alpha*(E_prev[index-tmp]+E_prev[index+tmp]-4*E_prev[index]+E_prev[index+1]+E_prev[index-1]); 
+		 E[tid] = E_prev[tid] + alpha*(E_prev[tid-tmp]+E_prev[tid+tmp]-4*E_prev[tid]+E_prev[tid+1]+E_prev[tid-1]); 
 	}
 }
 __global__ void simulate_v1_ODE(double *E, double *R, double *E_prev){
 
-	int j = blockIdx.x*blockDim.x + threadIdx.x; 
-	int i = blockIdx.y*blockDim.y + threadIdx.y;
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	int j = blockIdx.y * blockDim.y + threadIdx.y;
 
-	int grid_width = gridDim.x * blockDim.x;
-    int index = i * grid_width + j;
+	int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
 
 	if (i>0 && j> 0 && (i < n+2 ) && (j < n+2)){
-		E[index] = E[index] -dt*(kk* E[index]*(E[index] - a)*(E[index]-1)+ E[index] *R[index]);
-		R[index] = R[index] + dt*(epsilon+M1* R[index]/( E[index]+M2))*(-R[index]-kk* E[index]*(E[index]-b-1));
+		E[tid] = E[tid] -dt*(kk* E[tid]*(E[tid] - a)*(E[tid]-1)+ E[tid] *R[tid]);
+		R[tid] = R[tid] + dt*(epsilon+M1* R[tid]/( E[tid]+M2))*(-R[tid]-kk* E[tid]*(E[tid]-b-1));
 	}
     
-}
+}    
 /*
 __global__ void simulate_v2(double *E, double *R, double *E_prev){
 
@@ -144,6 +142,7 @@ namespace Simulation{
 		dim3 threadsPerBlock(16, 1);
 		dim3 numBlocks(1, 1);
 		simulate_v1_PDE<<<numBlocks, threadsPerBlock>>>(d_E, d_E_prev, d_R);
+		simulate_v1_ODE<<<numBlocks, threadsPerBlock>>>(d_E, d_E_prev, d_R);
 	}
 
 	void end(void){
