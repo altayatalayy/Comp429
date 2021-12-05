@@ -331,6 +331,9 @@ void splot(double **U, double T, int niter, int m, int n)
           mn = U[j][i];
       }
 
+
+    fprintf(gnu,"set terminal png size 800,600 enhanced font 'Helvetica,20'\n");
+    fprintf(gnu,"set output 'output.png'\n");
     fprintf(gnu,"set title \"T = %f [niter = %d]\"\n",T, niter);
     fprintf(gnu,"set size square\n");
     fprintf(gnu,"set key off\n");
@@ -344,7 +347,7 @@ void splot(double **U, double T, int niter, int m, int n)
     fprintf(gnu,"splot [0:%d] [0:%d][%f:%f] \"-\"\n",m-1,n-1,mn,mx);
     for (j=0; j<m; j++){
       for (i=0; i<n; i++) {
-	fprintf(gnu,"%d %d %f\n", i, j, U[i][j]);
+        fprintf(gnu,"%d %d %f\n", i, j, U[i][j]);
       }
       fprintf(gnu,"\n");
     }

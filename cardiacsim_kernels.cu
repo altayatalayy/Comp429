@@ -26,7 +26,6 @@ __constant__ double alpha;
 
 
 void check2(cudaError_t err, const char * file, int line){
-    printf("Should not be called!!!\n");
     if(err != cudaSuccess){
         printf("Cuda error occured, %s at line %d\nName:%s\nDescription:%s\n",\
             file, line, cudaGetErrorName(err), cudaGetErrorString(err));
@@ -103,7 +102,10 @@ namespace Simulation{
 	double *h_E, *h_E_prev, *h_R;
 	double *d_E, *d_E_prev, *d_R;
 
+	int hn, hm;
+
 	void init(double **E, double **E_prev, double **R, int h_alpha, int h_n, int h_m, double h_a,double h_kk, double h_dt, double h_epsilon, double h_M1, double h_M2, double h_b){
+		hn = h_n; hm = h_m;
 		//init consts
 		CUCall(cudaMemcpyToSymbol(n, &h_n, sizeof(int)));
 		CUCall(cudaMemcpyToSymbol(alpha, &h_alpha, sizeof(int)));
@@ -116,12 +118,16 @@ namespace Simulation{
 		CUCall(cudaMemcpyToSymbol(M2, &h_M2, sizeof(double)));
 		CUCall(cudaMemcpyToSymbol(b, &h_b, sizeof(double)));
 
-		size_t size = n * m * sizeof(double);
+		size_t size = (n + 2) * (m + 2) * sizeof(double);
 
 		//init host memory
 		h_E = (double*)malloc(size);
 		h_E_prev = (double*)malloc(size);
 		h_R = (double*)malloc(size);
+
+		CUCall(cudaMalloc((void**)&d_E, size));
+		CUCall(cudaMalloc((void**)&d_E_prev, size));
+		CUCall(cudaMalloc((void**)&d_R, size));
 
 		//Convert 2d arrays to 1D
 		size_t n_row = m + 2, n_col = n + 2;
@@ -146,6 +152,8 @@ namespace Simulation{
 		simulate_v1_PDE<<<numBlocks, threadsPerBlock>>>(d_E, d_E_prev, d_R);
 	}
 
+	
+
 	void end(void){
 		free(h_E);
 		free(h_E_prev);
@@ -154,6 +162,28 @@ namespace Simulation{
 		CUCall(cudaFree(d_E));
 		CUCall(cudaFree(d_E_prev));
 		CUCall(cudaFree(d_R));
+	}
+
+    void load(double ***E, double ***R, double ***E_prev){
+		size_t size = (n + 2) * (m + 2) * sizeof(double);
+		CUCall(cudaMemcpy(h_E, d_E, size, cudaMemcpyDeviceToHost));
+		CUCall(cudaMemcpy(h_E_prev, d_E_prev, size, cudaMemcpyDeviceToHost));
+		CUCall(cudaMemcpy(h_R, d_R, size, cudaMemcpyDeviceToHost));
+		CUCall(cudaDeviceSynchronize());
+
+		size_t n_row = m + 2, n_col = n + 2;
+		size_t idx = 0;
+		for(size_t i = 0; i < n_row; i++){
+			for(size_t j = 0; j < n_col; j++){
+				idx = (i * n_col) + j;
+				(*E)[i][j] = h_E[idx];
+				(*E_prev)[i][j] = h_E_prev[idx];
+				(*R)[i][j] = h_R[idx];
+			}
+		}
+		
+
+
 	}
 	
 }

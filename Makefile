@@ -34,7 +34,7 @@
 ################################################################################
 
 # Location of the CUDA Toolkit
-CUDA_PATH ?= /usr/local/cuda-11.1
+CUDA_PATH ?= /usr/local/cuda
 #CUDA_PATH ?= /usr/local/cuda-10.0
 
 ##############################
@@ -234,7 +234,7 @@ LIBRARIES :=
 ################################################################################
 
 # Gencode arguments
-SMS ?= 60 61 70 75 80 86
+SMS ?= 50 #60 61 70 75 80 86
 
 ifeq ($(SMS),)
 $(info >>> WARNING - no SM architectures have been specified - waiving sample <<<)
