@@ -48,7 +48,7 @@ __global__ void simulate_v1_PDE(double *E, double *R, double *E_prev){
 	int grid_width = gridDim.x * blockDim.x;
     int index = i * grid_width + j;
 
-	int tmp = 200; //n
+	int tmp = n; //n
 
 	if (i>0 && j > 0 && (i < n+2 ) && (j < n+2)){
 		 E[index] = E_prev[index] + alpha*(E_prev[index-tmp]+E_prev[index+tmp]-4*E_prev[index]+E_prev[index+1]+E_prev[index-1]); 
@@ -147,9 +147,16 @@ namespace Simulation{
 	}
 
 	void call(void){
-		dim3 threadsPerBlock(16, 1);
-		dim3 numBlocks(1, 1);
-		simulate_v1_PDE<<<numBlocks, threadsPerBlock>>>(d_E, d_E_prev, d_R);
+		int tx = 16, ty = 16;
+		int bx = (hn % tx == 0) ? (hn / tx) : (hn / tx) + 1;
+		int by = (hn % ty == 0) ? (hn / ty) : (hn / ty) + 1;
+		dim3 threadsPerBlock(tx, ty);
+		dim3 numBlocks(bx, by);
+		simulate_v1_PDE<<<numBlocks, threadsPerBlock>>>(d_E, d_R, d_E_prev);
+		CUCall(cudaDeviceSynchronize());
+		simulate_v1_ODE<<<numBlocks, threadsPerBlock>>>(d_E, d_R, d_E_prev);
+		CUCall(cudaDeviceSynchronize());
+		double *tmp = d_E; d_E = d_E_prev; d_E_prev = tmp;
 	}
 
 	

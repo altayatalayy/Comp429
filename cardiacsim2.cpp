@@ -59,8 +59,8 @@ int main (int argc, char** argv)
   // Various constants - these definitions shouldn't change
   const double a=0.1, b=0.1, kk=8.0, M1= 0.07, M2=0.3, epsilon=0.01, d=5e-5;
   
-  double T=1000.0;
-  int m=200,n=200;
+  double T=0.1;
+  int m=20,n=20;
   int plot_freq = 0;
   int bx = 1, by = 1;
   int kernel=1;
@@ -115,9 +115,15 @@ int main (int argc, char** argv)
   double t = 0.0;
   // Integer timestep number
   int niter=0;
-
+ for (int j=0; j<m+2; j++){
+      for (int i=0; i<n+2; i++){
+        printf("%f ", E[j][i]);
+      }
+      printf("\n");
+  }
+  printf("\n");
   Simulation::init(E,E_prev,R,alpha,n, m,a, kk, dt, epsilon, M1, M2, b);
-  
+ 
   while (t<T) {
     
     t += dt;
@@ -129,7 +135,15 @@ int main (int argc, char** argv)
     //swap current E with previous E
     //double **tmp = E; E = E_prev; E_prev = tmp;
     Simulation::load(&E, &R, &E_prev);
-    double **tmp = E; E = E_prev; E_prev = tmp;
+    for (int j=0; j<m+2; j++){
+      for (int i=0; i<n+2; i++){
+        printf("%f ", E[j][i]);
+      }
+      printf("\n");
+    }
+    printf("\n");
+
+    //double **tmp = E; E = E_prev; E_prev = tmp;
     
     if (plot_freq){
       int k = (int)(t/plot_freq);
@@ -139,6 +153,19 @@ int main (int argc, char** argv)
     }
 
   }//end of while loop
+  double time_elapsed = getTime() - t0;
+
+  double Gflops = (double)(niter * (1E-9 * n * n ) * 28.0) / time_elapsed ;
+  double BW = (double)(niter * 1E-9 * (n * n * sizeof(double) * 4.0  ))/time_elapsed;
+
+  cout << "Number of Iterations        : " << niter << endl;
+  cout << "Elapsed Time (sec)          : " << time_elapsed << endl;
+  cout << "Sustained Gflops Rate       : " << Gflops << endl; 
+  cout << "Sustained Bandwidth (GB/sec): " << BW << endl << endl; 
+
+  double mx;
+  double l2norm = stats(E_prev,m,n,&mx);
+  cout << "Max: " << mx <<  " L2norm: "<< l2norm << endl;
   Simulation::end();
 
   return EXIT_SUCCESS;
@@ -241,7 +268,7 @@ void splot(double **U, double T, int niter, int m, int n)
     fprintf(gnu,"splot [0:%d] [0:%d][%f:%f] \"-\"\n",m-1,n-1,mn,mx);
     for (j=0; j<m; j++){
       for (i=0; i<n; i++) {
-  fprintf(gnu,"%d %d %f\n", i, j, U[i][j]);
+        fprintf(gnu,"%d %d %f\n", i, j, U[i][j]);
       }
       fprintf(gnu,"\n");
     }
