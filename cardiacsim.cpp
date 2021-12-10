@@ -26,6 +26,17 @@ using namespace std;
 // External functions
 extern "C" void splot(double **E, double T, int niter, int m, int n);
 
+
+void print2d(double ** mat, int n, int m){
+  for(int i = 0; i < n; i++){
+    for(int j = 0; j < m; j++){
+      printf("%4.2f ", mat[i][j]);
+    }
+    printf("\n");
+  }
+  printf("\n");
+}
+
 void cmdLine(int argc, char *argv[], double& T, int& n, int& px, int& py, int& plot_freq, int& kernel_no);
 
 // Utilities
@@ -177,6 +188,8 @@ int main (int argc, char** argv)
     for (i=1; i<=n; i++)
       R[j][i] = 1.0;
   
+
+  
   double dx = 1.0/n;
 
   // For time integration, these values shouldn't change 
@@ -213,6 +226,12 @@ int main (int argc, char** argv)
     
     //swap current E with previous E
     double **tmp = E; E = E_prev; E_prev = tmp;
+    /*
+    printf("E = \n");
+    print2d(E, n+2, m+2);
+    printf("E_prev = \n");
+    print2d(E_prev, n+2, m+2);
+    */
     
     if (plot_freq){
       int k = (int)(t/plot_freq);

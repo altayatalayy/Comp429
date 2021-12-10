@@ -25,6 +25,16 @@
 
 using namespace std;
 
+void print2d(double ** mat, int n, int m){
+  for(int i = 0; i < n; i++){
+    for(int j = 0; j < m; j++){
+      printf("%4.2f ", mat[i][j]);
+    }
+    printf("\n");
+  }
+  printf("\n");
+}
+
 void cmdLine(int argc, char *argv[], double& T, int& n, int& px, int& py, int& plot_freq, int& kernel_no);
 
 // Utilities
@@ -59,11 +69,11 @@ int main (int argc, char** argv)
   // Various constants - these definitions shouldn't change
   const double a=0.1, b=0.1, kk=8.0, M1= 0.07, M2=0.3, epsilon=0.01, d=5e-5;
   
-  double T=0.1;
-  int m=20,n=20;
+  double T = 1000;
+  int m = N, n = M;
   int plot_freq = 0;
   int bx = 1, by = 1;
-  int kernel=1;
+  int kernel = 1;
 
   cmdLine( argc, argv, T, n, bx, by, plot_freq, kernel);
   m = n;  
@@ -115,39 +125,36 @@ int main (int argc, char** argv)
   double t = 0.0;
   // Integer timestep number
   int niter=0;
- for (int j=0; j<m+2; j++){
-      for (int i=0; i<n+2; i++){
-        printf("%f ", E[j][i]);
-      }
-      printf("\n");
-  }
-  printf("\n");
-  Simulation::init(E,E_prev,R,alpha,n, m,a, kk, dt, epsilon, M1, M2, b);
+  /*
+  printf("E = \n");
+  print2d(E, n+2, m+2);
+  printf("E_prev = \n");
+  print2d(E_prev, n+2, m+2);
+  printf("R = \n");
+  print2d(R, n+2, m+2);
+  */
+ 
+  Simulation::init(E, E_prev, R, (double)alpha, n, m, a, kk, dt, epsilon, M1, M2, b);
  
   while (t<T) {
-    
     t += dt;
     niter++;
  
-    //simulate(E, E_prev, R, alpha, n, m, kk, dt, a, epsilon, M1, M2, b); 
     Simulation::call();
     
-    //swap current E with previous E
-    //double **tmp = E; E = E_prev; E_prev = tmp;
-    Simulation::load(&E, &R, &E_prev);
-    for (int j=0; j<m+2; j++){
-      for (int i=0; i<n+2; i++){
-        printf("%f ", E[j][i]);
-      }
-      printf("\n");
-    }
-    printf("\n");
-
-    //double **tmp = E; E = E_prev; E_prev = tmp;
+    /*
+    //if(niter < 3){
+    printf("E = \n");
+    print2d(E, n+2, m+2);
+    printf("E_prev = \n");
+    print2d(E_prev, n+2, m+2);
+    //}
+    */
     
     if (plot_freq){
       int k = (int)(t/plot_freq);
       if ((t - k * plot_freq) < dt){
+        Simulation::load(&E, &R, &E_prev);
         splot(E,t,niter,m+2,n+2);
       }
     }
