@@ -3,8 +3,8 @@
 
 #pragma once
 
-#define N 256
-#define M 256
+#define N 40
+#define M 40
 
 namespace Simulation{
 	void init(double **E, double **E_prev, double **R, double h_alpha, int h_n, int h_m,double h_a, double h_kk, double h_dt, double h_epsilon, double h_M1, double h_M2, double h_b);

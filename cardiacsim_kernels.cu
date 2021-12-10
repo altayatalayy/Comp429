@@ -86,7 +86,7 @@ __global__ void simulate_v1_ODE(double *E, double *R, double *E_prev){
 	int t_row_idx = blockIdx.x*blockDim.x + threadIdx.x + 1; //thread row and column indeces.
 	int t_col_idx = blockIdx.y*blockDim.y + threadIdx.y + 1;
 
-	if((t_row_idx > 0) && (t_col_idx > 0) && (t_row_idx < n+1 ) && (t_col_idx < n+1)){
+	if((t_row_idx > 0) && (t_col_idx > 0) && (t_row_idx < n+2 ) && (t_col_idx < n+2)){
 		size_t index = (size_t)(t_row_idx * (m+2) + t_col_idx);
 		E[index] = E[index] - dt * (kk * E[index] * (E[index] - a) * (E[index] - 1) + E[index] * R[index]);
 		R[index] = R[index] + dt * (epsilon + M1 * R[index] / (E[index] + M2)) * (-R[index] - kk * E[index] * (E[index] - b - 1));
@@ -94,10 +94,10 @@ __global__ void simulate_v1_ODE(double *E, double *R, double *E_prev){
     
 }    
 __global__ void simulate_v2(double *E, double *R, double *E_prev){
-	int t_row_idx = blockIdx.x*blockDim.x + threadIdx.x; //thread row and column indeces.
-	int t_col_idx = blockIdx.y*blockDim.y + threadIdx.y;
+	int t_row_idx = blockIdx.x*blockDim.x + threadIdx.x + 1; //thread row and column indeces.
+	int t_col_idx = blockIdx.y*blockDim.y + threadIdx.y + 1;
 
-	if((t_row_idx > 0) && (t_col_idx > 0) && (t_row_idx < n+1 ) && (t_col_idx < n+1)){
+	if((t_row_idx > 0) && (t_col_idx > 0) && (t_row_idx < n+2 ) && (t_col_idx < n+2)){
 		size_t index = (size_t)(t_row_idx * (m + 2) + t_col_idx);
 		size_t left = index - 1, right = index + 1, up = index - (m+2), down = index + (m+2);
 		E[index] = E_prev[index] + alpha * (E_prev[up] + E_prev[down] - 4*E_prev[index] + E_prev[right] + E_prev[left]); 
@@ -108,10 +108,10 @@ __global__ void simulate_v2(double *E, double *R, double *E_prev){
 }
 
 __global__ void simulate_v3(double *E, double *R, double *E_prev){
-	int t_row_idx = blockIdx.x*blockDim.x + threadIdx.x; //thread row and column indeces.
-	int t_col_idx = blockIdx.y*blockDim.y + threadIdx.y;
+	int t_row_idx = blockIdx.x*blockDim.x + threadIdx.x + 1; //thread row and column indeces.
+	int t_col_idx = blockIdx.y*blockDim.y + threadIdx.y + 1;
 
-	if((t_row_idx > 0) && (t_col_idx > 0) && (t_row_idx < n+1 ) && (t_col_idx < n+1)){
+	if((t_row_idx > 0) && (t_col_idx > 0) && (t_row_idx < n+2 ) && (t_col_idx < n+2)){
 		size_t index = (size_t)(t_row_idx * (m + 2) + t_col_idx);
 		size_t left = index - 1, right = index + 1, up = index - (m+2), down = index + (m+2);
 		double e, r = R[index];
@@ -129,14 +129,15 @@ __global__ void simulate_v4(double *E, double *R, double *E_prev){
 	const int bn = BN, bm = BM;
 	__shared__ double lE[(bn + 2) * (bm + 2)];
 	int idx = (threadIdx.y + 1) * (blockDim.x + 2) + (threadIdx.x + 1);
-	size_t gidx = (size_t)(blockIdx.x + 1) * blockDim.x + (n + 2) * (threadIdx.y + 1 + blockIdx.y * bn) - threadIdx.x;
+	int lidx = idx;
+	size_t gidx = threadIdx.x + 1 + blockIdx.x * blockDim.x + (blockIdx.y * blockDim.y + threadIdx.y + 1) * (n + 2);//idx + blockIdx.x * blockDim.x + blockIdx.y * (n + 2);//(size_t)(blockIdx.x + 1) * blockDim.x + (n + 2) * (threadIdx.y + 1 + blockIdx.y * bn) - threadIdx.x;
 	lE[idx] = E_prev[gidx];
 	//printf("gidx = %d, idx = %d\n", gidx, idx);
 	//E[gidx] = -1;//lE[idx];
 	//load host cells
 	if(threadIdx.y == 0){
 		idx = threadIdx.x + 1;
-		gidx = (size_t)(n + 2) * (blockIdx.y * blockDim.y) + blockIdx.x * blockDim.x + idx;//fix
+		gidx = (size_t)(n + 2) * (blockIdx.y * blockDim.y) + blockIdx.x * blockDim.x + idx;
 		//printf("gidx = %d, idx = %d\n", gidx, idx);
 		lE[idx] = E_prev[gidx];
 		//E[gidx] = -1;//lE[idx];
@@ -144,7 +145,7 @@ __global__ void simulate_v4(double *E, double *R, double *E_prev){
 
 	if(threadIdx.y == bm-1){
 		idx = threadIdx.x + 1 + (bm+1) * (bn+2);
-		gidx = (size_t)(n + 2) * (blockIdx.y * blockDim.y + (bm + 1)) + blockIdx.x * blockDim.x + threadIdx.x + 1;//fix
+		gidx = (size_t)(n + 2) * (blockIdx.y * blockDim.y + (bm + 1)) + blockIdx.x * blockDim.x + threadIdx.x + 1;
 		lE[idx] = E_prev[gidx];
 		//printf("gidx = %d, idx = %d\n", gidx, idx);
 		//E[gidx] = -1;//lE[idx];
@@ -152,7 +153,7 @@ __global__ void simulate_v4(double *E, double *R, double *E_prev){
 
 	if(threadIdx.x == 0){
 		idx = (threadIdx.y + 1) * (blockDim.x + 2);
-		gidx = (size_t)(n + 2) * (threadIdx.y + 1 + blockIdx.y * blockDim.y) + (blockIdx.x * (blockDim.x + 0));//fix
+		gidx = (size_t)(n + 2) * (threadIdx.y + 1 + blockIdx.y * blockDim.y) + (blockIdx.x * (blockDim.x + 0));
 		lE[idx] = E_prev[gidx];
 		//printf("gidx = %d, idx = %d\n", gidx, idx);
 		//E[gidx] = -1;//lE[idx];
@@ -160,23 +161,24 @@ __global__ void simulate_v4(double *E, double *R, double *E_prev){
 
 	if(threadIdx.x == bn-1){
 		idx = (threadIdx.y + 1) * (blockDim.x + 2) + (bn + 1);
-		gidx = (size_t)(bn + 1) + (n + 2) * (threadIdx.y + 1 + blockIdx.y * blockDim.y) + (blockIdx.x * (blockDim.x + 0));//fix
+		gidx = (size_t)(bn + 1) + (n + 2) * (threadIdx.y + 1 + blockIdx.y * blockDim.y) + (blockIdx.x * (blockDim.x + 0));
 		lE[idx] = E_prev[gidx];
 		//printf("gidx = %d, idx = %d\n", gidx, idx);
 		//E[gidx] = -1;//lE[idx];
 	}	
 
 	//int idx = (threadIdx.y + 1) * (blockDim.x + 2) + (threadIdx.x + 1);
-	gidx = (size_t)(blockIdx.x + 1) * blockDim.x + (n + 2) * (threadIdx.y + 1 + blockIdx.y * bn) - threadIdx.x;
-	int lidx = (threadIdx.y + 1) * (blockDim.x + 2) + (threadIdx.x + 1);
-	size_t left = lidx - 1, right = lidx + 1, up = lidx - (bm+2), down = lidx + (bm+2);
+	//gidx = (size_t)(blockIdx.x + 1) * blockDim.x + (n + 2) * (threadIdx.y + 1 + blockIdx.y * bn) - threadIdx.x;
+	//int lidx = (threadIdx.y + 1) * (blockDim.x + 2) + (threadIdx.x + 1);
+	size_t left = lidx - 1, right = lidx + 1, up = lidx - (blockDim.x+2), down = lidx + (blockDim.x+2);
 	
 	int t_row_idx = blockIdx.x*blockDim.x + threadIdx.x + 1; //thread row and column indeces.
 	int t_col_idx = blockIdx.y*blockDim.y + threadIdx.y + 1;
 	//printf("r = %d, c = %d", t_row_idx, t_col_idx);
 
 	//size_t index = (size_t)(t_row_idx * (m + 2) + t_col_idx);
-	size_t index = gidx;
+	//size_t index = (size_t)(blockIdx.x + 1) * blockDim.x + (n + 2) * (threadIdx.y + 1 + blockIdx.y * bn) - threadIdx.x;
+	size_t index = threadIdx.x + 1 + blockIdx.x * blockDim.x + (blockIdx.y * blockDim.y + threadIdx.y + 1) * (n + 2);
 	double e, r = R[index];
 
 	__syncthreads();
@@ -247,10 +249,10 @@ namespace Simulation{
 
 		sim_boundry1<<<dim3(1, by), dim3(1, ty)>>>(d_E_prev);
 		sim_boundry2<<<dim3(bx, 1), dim3(tx, 1)>>>(d_E_prev);
-		simulate_v1_PDE<<<numBlocks, threadsPerBlock>>>(d_E, d_R, d_E_prev);
-		simulate_v1_ODE<<<numBlocks, threadsPerBlock>>>(d_E, d_R, d_E_prev);
+		//simulate_v1_PDE<<<numBlocks, threadsPerBlock>>>(d_E, d_R, d_E_prev);
+		//simulate_v1_ODE<<<numBlocks, threadsPerBlock>>>(d_E, d_R, d_E_prev);
 		//simulate_v2<<<numBlocks, threadsPerBlock>>>(d_E, d_R, d_E_prev);
-		//simulate_v3<<<numBlocks, threadsPerBlock>>>(d_E, d_R, d_E_prev);
+		simulate_v3<<<numBlocks, threadsPerBlock>>>(d_E, d_R, d_E_prev);
 		//simulate_v4<<<numBlocks, threadsPerBlock>>>(d_E, d_R, d_E_prev);
 		CUCall(cudaDeviceSynchronize());
 		double *tmp = d_E; d_E = d_E_prev; d_E_prev = tmp;

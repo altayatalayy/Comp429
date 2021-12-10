@@ -70,7 +70,7 @@ int main (int argc, char** argv)
   const double a=0.1, b=0.1, kk=8.0, M1= 0.07, M2=0.3, epsilon=0.01, d=5e-5;
   
   double T = 1000;
-  int m = N, n = M;
+  int m = 200, n = 200;
   int plot_freq = 0;
   int bx = 1, by = 1;
   int kernel = 1;
@@ -141,6 +141,7 @@ int main (int argc, char** argv)
     niter++;
  
     Simulation::call();
+    //Simulation::load(&E, &R, &E_prev);
     
     /*
     //if(niter < 3){
@@ -149,7 +150,8 @@ int main (int argc, char** argv)
     printf("E_prev = \n");
     print2d(E_prev, n+2, m+2);
     //}
-    */
+   return 0;
+   */
     
     if (plot_freq){
       int k = (int)(t/plot_freq);
